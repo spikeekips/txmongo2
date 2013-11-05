@@ -225,6 +225,9 @@ class ReplicaSetConnection (RealConnection, ) :
 
     connections = dict()
 
+    def connect (self, ) :
+        return RealConnection.connect(self, ).addBoth(self._connection_done, )
+
     def get_factory_instance (self, uri, ) :
         return self.factory(self, uri, )
 
@@ -253,7 +256,6 @@ class ReplicaSetConnection (RealConnection, ) :
         _d = BaseConnection.send_replset_get_status(proto, )
         _d.addCallback(self._cb_get_config, proto, )
         _d.addErrback(self._eb, proto, )
-        _d.addBoth(self._connection_done, )
 
         return _d
 
@@ -356,7 +358,7 @@ class ReplicaSetConnection (RealConnection, ) :
 
 
 class ReplicaSetConnectionMonitor (object, ) :
-    interval = 0.4
+    interval = 1
     #interval = 5
 
     hosts = list()
@@ -449,7 +451,11 @@ class ReplicaSetConnectionMonitor (object, ) :
 
             return None
 
-        if config.get('name') in self._connection.connections :
+        if config.get('name') not in self._connection.connections :
+            if config.get('state') not in (1, 2, ) :
+                return None
+
+        elif config.get('name') in self._connection.connections :
             if config.get('state') in (1, 2, ) :
                 self._connection.connections[config.get('name')].config = config
             else :

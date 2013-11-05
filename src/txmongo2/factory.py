@@ -34,14 +34,11 @@ class SingleConnectionFactory (BaseConnectionFactory, ) :
 
 
 class ReplicaSetConnectionFactory (BaseConnectionFactory, ) :
-    _retry = 0
-
     def __init__ (self, connection, uri, ) :
         self._connection = connection
         BaseConnectionFactory.__init__(self, uri, )
 
     def clientConnectionMade (self, connector, ) :
-        self._retry = 0
         BaseConnectionFactory.clientConnectionMade(self, connector, )
 
     def clientConnectionLost (self, connector, reason, ) :
@@ -49,10 +46,6 @@ class ReplicaSetConnectionFactory (BaseConnectionFactory, ) :
 
         if self._connection.remove_connection(connector.addr, ) :
             log.msg('[debug,%s] removed from connection list.' % connector.addr, )
-
-        if self._retry < 4 and connector.config :
-            reactor.callLater(1, self._connection.connect_new, connector.config, )
-            self._retry += 1;
 
         return
 
